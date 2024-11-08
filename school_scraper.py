@@ -2,15 +2,15 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import datetime
+import json
 import config
 import string
-
 
 def scrape_school_website(url):
     """Fetches and cleans content from a given URL."""
     try:
         response = requests.get(url, headers=config.HEADERS, timeout=10)
-        response.raise_for_status()  # Raise an exception for HTTP errors
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Remove unnecessary tags
@@ -34,55 +34,20 @@ def scrape_school_website(url):
 
 def clean_text(text):
     """Cleans and normalizes the input text for easier comparison."""
-    # Normalize: lower case, remove punctuation, and unnecessary spaces
     text = text.lower()
     text = text.translate(str.maketrans("", "", string.punctuation))
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
 
-def save_to_file(content, topic_name):
-    """Saves the formatted content to a timestamped text file."""
-    filename = f"{topic_name}_{datetime.datetime.now():%Y%m%d_%H%M%S}.txt"
-    with open(filename, "w", encoding="utf-8") as file:
-        file.write(content)
-    print(f"Content saved to {filename}")
+def save_to_json(content_dict):
+    """Saves the scraped content into a JSON file."""
+    with open("scraped_content.json", "w", encoding="utf-8") as json_file:
+        json.dump(content_dict, json_file, ensure_ascii=False, indent=4)
+    print("Content saved to scraped_content.json")
 
-
-def display_topics():
-    """Displays a list of topics available for scraping."""
-    print("Available Topics to Scrape:")
-    for i, topic in enumerate(config.TOPICS, start=1):
-        print(f"{i}. {topic}")
-
-
-def search_content(query, all_content):
-    """Searches through the available content for the most relevant match."""
-    query = clean_text(query)  # Normalize user input
-
-    # Check for exact matches first
-    for topic, content in all_content.items():
-        if query in content:
-            return topic, content
-
-    # If no exact match, find the most relevant match
-    best_match = None
-    highest_score = 0
-
-    for topic, content in all_content.items():
-        # Compute a simple relevance score based on the occurrence of query terms
-        content_clean = clean_text(content)
-        score = sum(content_clean.count(word) for word in query.split())
-
-        if score > highest_score:
-            best_match = topic
-            highest_score = score
-
-    return best_match, all_content[best_match]
-
-
-def main():
-    # Scrape all pages first and store the content
+def get_all_content():
+    """Scrapes all topics and returns a dictionary with content for each topic."""
     all_content = {}
     for topic, url in config.TOPICS.items():
         content = scrape_school_website(url)
@@ -90,21 +55,9 @@ def main():
             all_content[topic] = content
         else:
             print(f"Failed to scrape content for: {topic}")
-
-    # Display available topics and get user input
-    display_topics()
-    user_input = input("Enter the topic you want to search: ")
-
-    # Search for the most relevant topic
-    matched_topic, matched_content = search_content(user_input, all_content)
-
-    # Save the matched content to file
-    if matched_topic:
-        print(f"\nMatched Topic: {matched_topic}")
-        save_to_file(matched_content, matched_topic)
-    else:
-        print("No relevant topic found. Please try again with a different query.")
+    return all_content
 
 
 if __name__ == "__main__":
-    main()
+    all_content = get_all_content()  # Store all content for local testing
+    save_to_json(all_content)  # Save the content to a JSON file for use in the GUI
