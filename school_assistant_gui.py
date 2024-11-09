@@ -1,63 +1,100 @@
 import streamlit as st
-import json
+import sqlite3
+from fuzzywuzzy import fuzz
+from config import SCHOOL_WEBSITE_URL  # Assuming you're importing the URL from config.py
+from school_scraper import scrape_school_website  # Assuming scrape_schools is already implemented
 
+# Function to search for exact and fuzzy matches
+def search_in_db(query, exact_match=True, threshold=80):
+    """Search for a query in the database with exact or fuzzy match."""
+    conn = sqlite3.connect('school_data.db')
+    c = conn.cursor()
 
-# Load the scraped content from the JSON file
-def load_scraped_content():
-    try:
-        with open("scraped_content.json", "r", encoding="utf-8") as json_file:
-            content = json.load(json_file)
-        return content
-    except FileNotFoundError:
-        st.error("No scraped data found. Please scrape the website first!")
-        return {}
-
-
-# Search for content matching the query
-def search_content(query, all_content):
-    """Searches through the available content for the most relevant match."""
-    query = query.lower()
-
-    for topic, content in all_content.items():
-        if query in content.lower():
-            return topic, content
-
-    best_match = None
-    highest_score = 0
-
-    for topic, content in all_content.items():
-        content_clean = content.lower()
-        score = sum(content_clean.count(word) for word in query.split())
-
-        if score > highest_score:
-            best_match = topic
-            highest_score = score
-
-    return best_match, all_content.get(best_match) if best_match else (None, None)
-
-
-# Streamlit app layout
-def main():
-    st.title("School Knowledge Assistant")
-
-    # Load scraped content
-    all_content = load_scraped_content()
-
-    if all_content:
-        st.sidebar.header("Search")
-        query = st.sidebar.text_input("Enter a keyword to search:")
-
-        if query:
-            matched_topic, matched_content = search_content(query, all_content)
-
-            if matched_topic and matched_content:
-                st.subheader(f"Matched Topic: {matched_topic}")
-                st.write(matched_content)
-            else:
-                st.warning("No relevant content found. Please try again with a different keyword.")
+    c.execute("SELECT * FROM schools")
+    schools = c.fetchall()
+    
+    results = []
+    
+    for school in schools:
+        topic = school[1].lower()
+        content = school[2].lower()
+        query_lower = query.lower()
+        
+        # Exact match search
+        if exact_match:
+            if query_lower == topic or query_lower == content:
+                results.append(school)
         else:
-            st.sidebar.info("Enter a keyword to search for relevant content.")
+            # Fuzzy match search
+            if fuzz.partial_ratio(query_lower, topic) >= threshold or fuzz.partial_ratio(query_lower, content) >= threshold:
+                results.append(school)
 
+    conn.close()
+    return results
 
-if __name__ == "__main__":
-    main()
+# Create a function to display the scraped school information
+def display_school_info():
+    # Connect to the database to get any existing data
+    conn = sqlite3.connect('school_data.db')
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM schools")
+    schools = c.fetchall()
+
+    if len(schools) == 0:
+        st.write("No data found.")
+    else:
+        for school in schools:
+            st.write(f"School Name: {school[1]}")
+            st.write(f"School Description: {school[2]}")
+            st.write("---")
+
+    conn.close()
+
+# Set up the Streamlit interface
+st.title("School Assistant")
+
+# Display options for the user
+option = st.selectbox(
+    "Choose an action",
+    ("Scrape School Data", "View School Data", "Search School Data")
+)
+
+if option == "Scrape School Data":
+    st.write("Starting the scraping process...")
+
+    try:
+        # Scrape the data from the website
+        scrape_school_website(SCHOOL_WEBSITE_URL)
+        st.success("Scraping completed successfully!")
+    except Exception as e:
+        st.error(f"Error during scraping: {e}")
+
+elif option == "View School Data":
+    st.write("Displaying all scraped school data:")
+    display_school_info()
+
+elif option == "Search School Data":
+    st.write("Search for school data:")
+    
+    # Input for search query
+    query = st.text_input("Enter search query:")
+    
+    # Checkbox for fuzzy match option
+    fuzzy_search = st.checkbox("Enable fuzzy search")
+    
+    if query:
+        if fuzzy_search:
+            st.write("Searching with fuzzy match...")
+            results = search_in_db(query, exact_match=False, threshold=80)
+        else:
+            st.write("Searching with exact match...")
+            results = search_in_db(query, exact_match=True)
+        
+        if results:
+            for result in results:
+                st.write(f"Topic: {result[1]}")
+                st.write(f"Content: {result[2]}")
+                st.write("---")
+        else:
+            st.write("No results found.")

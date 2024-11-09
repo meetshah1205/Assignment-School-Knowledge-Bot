@@ -1,8 +1,7 @@
 import re
 import requests
 from bs4 import BeautifulSoup
-import datetime
-import json
+import sqlite3
 import config
 import string
 
@@ -40,11 +39,25 @@ def clean_text(text):
     return text
 
 
-def save_to_json(content_dict):
-    """Saves the scraped content into a JSON file."""
-    with open("scraped_content.json", "w", encoding="utf-8") as json_file:
-        json.dump(content_dict, json_file, ensure_ascii=False, indent=4)
-    print("Content saved to scraped_content.json")
+def save_to_db(content_dict):
+    """Saves the scraped content into an SQLite database."""
+    conn = sqlite3.connect('school_data.db')
+    c = conn.cursor()
+
+    # Create the table with the correct schema if it doesn't exist
+    c.execute('''CREATE TABLE IF NOT EXISTS schools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic TEXT NOT NULL,
+                    content TEXT NOT NULL)''')
+
+    # Insert scraped data into the table
+    for topic, content in content_dict.items():
+        c.execute("INSERT INTO schools (topic, content) VALUES (?, ?)", (topic, content))
+
+    conn.commit()
+    conn.close()
+    print("Content saved to school_data.db")
+
 
 def get_all_content():
     """Scrapes all topics and returns a dictionary with content for each topic."""
@@ -52,7 +65,7 @@ def get_all_content():
     for topic, url in config.TOPICS.items():
         content = scrape_school_website(url)
         if content:
-            all_content[topic] = content
+            all_content[topic] = clean_text(content)  # Clean the content before saving
         else:
             print(f"Failed to scrape content for: {topic}")
     return all_content
@@ -60,4 +73,4 @@ def get_all_content():
 
 if __name__ == "__main__":
     all_content = get_all_content()  # Store all content for local testing
-    save_to_json(all_content)  # Save the content to a JSON file for use in the GUI
+    save_to_db(all_content)  # Save the content to the database for use in the GUI
