@@ -71,4 +71,10 @@ This app is for educational purposes and is built to demonstrate web scraping an
 
 <hr>
 
+## 🖼️ Visual representation of this project
+Here is a very very high quality art of the visual representation of this project:
+![image](how-this-works.png)
+
+<hr>
+
 Have fun exploring! 🚀
