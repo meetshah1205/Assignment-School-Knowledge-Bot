@@ -21,12 +21,25 @@ Welcome to the **School Knowledge Assistant**! This app allows you to query vari
   source venv/bin/activate 
 ```
 
-3. **Install the dependencies:**
+3. **Set the OpenAi API key as the environment variable:**
+```bash
+set OPENAI_API_KEY=sk-proj-your_api-key_here # Windows (Run in a CMD session because Powershell doesn't' work for some 
+reason)
+export OPENAI_API_KEY=sk-proj-your_api-key_here # MacOS/Linux
+ 
+```
+3.1 ***Verify if the environment variable is set:***
+```bash
+echo %OPENAI_API_KEY% # Windows
+echo $OPENAI_API_KEY # MacOS/Linux
+```
+
+4. **Install the dependencies:**
 ```bash
   pip install -r requirements.txt 
 ```
 
-4. **Run the app:**
+5. **Run the app:**
 ```bash
   streamlit run school_scraper.py 
 ```
