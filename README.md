@@ -52,6 +52,7 @@ pip install numpy  # For numerical operations
 pip install fuzzywuzzy  # For string similarity matching
 pip install python-Levenshtein  # Optimizes fuzzywuzzy's performance
 pip install sentence-transformers  # For embedding-based operations
+pip install openai # For the Ai part
 ```
 
 ### Step 4: Set up API Keys
