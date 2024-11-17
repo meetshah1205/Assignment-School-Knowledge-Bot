@@ -9,7 +9,6 @@ Welcome to the **School Knowledge Assistant**! This app allows you to query vari
 1. **Clone the repository**:
 ```bash
    git clone https://github.com/meetshah1205/Assignment-School-Knowledge-Bot.git # clone the repository
-   cd Assignment-School-Knowledge-Bot # cd into the main directory
 ```
 
 2. **Create and activate a virtual environment (optional but recommended):**
