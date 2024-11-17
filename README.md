@@ -20,7 +20,7 @@ Ensure you have Python 3.7+ installed. You can download Python from the official
 ### Step 1: Clone the repository
 ```bash
 git clone https://github.com/your-username/school-knowledge-assistant.git
-cd school-knowledge-assistant
+cd school-knowledge-assistant # The directory name can be different so just cd to whatever the name of the directory is
 ```
 
 ### Step 2: Set up a virtual environment (optional but recommended)
