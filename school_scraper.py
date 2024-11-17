@@ -1,84 +1,142 @@
 import openai
+import chromadb
 import requests
 from bs4 import BeautifulSoup
-import config
+from sklearn.metrics.pairwise import cosine_similarity
+from config import OPENAI_API_KEY, URLS_TO_SCRAPE  # Import API key and URLs from config.py
+import numpy as np
 import streamlit as st
 
+# Set OpenAI API key
+openai.api_key = OPENAI_API_KEY
 
-# Function to fetch and process content from the provided URL
-def fetch_and_process_content(url):
+# Initialize Chroma DB client
+client = chromadb.Client()
+collection_name = "school_knowledge"
+
+def get_or_create_collection():
+    """Gets or creates a Chroma collection."""
     try:
-        # Fetch the webpage content
-        response = requests.get(url, headers=config.HEADERS)
-
-        # Parse the HTML content
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Extract all the text from the page, ignoring scripts and styles
-        for script_or_style in soup(['script', 'style']):
-            script_or_style.decompose()
-        text = soup.get_text(separator=' ', strip=True)
-
-        return text
+        collection = client.get_collection(collection_name)
     except Exception as e:
-        return f"Error fetching content: {str(e)}"
+        print(f"Error getting collection: {e}")
+        collection = client.create_collection(collection_name)
+    return collection
 
+def scrape_website(urls):
+    """Scrapes the given URLs and extracts paragraphs of text."""
+    all_content = []
+    for url in urls:
+        try:
+            print(f"Scraping URL: {url}")
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+            response = requests.get(url, headers=headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            paragraphs = soup.find_all('p')
+            page_content = [p.get_text().strip() for p in paragraphs if p.get_text().strip()]
+            if page_content:
+                all_content.append((url, page_content))
+            else:
+                print(f"No content found in {url}")
+        except Exception as e:
+            print(f"Error scraping {url}: {e}")
+    return all_content
 
-# Function to summarize content using OpenAI API based on scraped data
-def generate_response(query, scraped_data):
-    prompt = f"""
-    You are a helpful assistant. Given the following content about a school website, answer the user's query as accurately as possible. If you think the content might be incorrect or incomplete, offer alternative options or ask the user to clarify.
+def add_documents_to_collection(collection, documents):
+    """Adds documents to the Chroma DB collection."""
+    all_texts = []
+    for url, content in documents:
+        for para in content:
+            all_texts.append({"url": url, "text": para})
 
-    Content:
-    {scraped_data}
+    ids = [f"doc_{i + 1}" for i in range(len(all_texts))]
+    print(f"Adding {len(all_texts)} documents to Chroma DB...")
+    collection.add(documents=[doc["text"] for doc in all_texts], ids=ids,
+                   metadatas=[{"url": doc["url"]} for doc in all_texts])
 
-    User Query: {query}
+def perform_search(query):
+    """Performs a semantic search in Chroma DB."""
+    collection = get_or_create_collection()
 
-    Response:
-    """
+    if collection.count() == 0:
+        # If collection is empty, scrape data and add to the collection
+        scraped_content = scrape_website(URLS_TO_SCRAPE)
+        add_documents_to_collection(collection, scraped_content)
+
+    # Get all documents and metadata from the collection
+    results = collection.get()
+    all_docs = results['documents']
+    all_metadata = results['metadatas']
+
+    print(f"Found {len(all_docs)} documents in the collection")
+
+    # Use OpenAI's Embedding API for semantic search
+    embeddings = openai.Embedding.create(input=all_docs, model="text-embedding-ada-002")['data']
+    doc_embeddings = [embedding['embedding'] for embedding in embeddings]
+
+    # Create embedding for the query
+    query_embedding = openai.Embedding.create(input=[query], model="text-embedding-ada-002")['data'][0]['embedding']
+
+    # Compute cosine similarity between query and document embeddings
+    cosine_sim = cosine_similarity([query_embedding], doc_embeddings)
+    best_match_idx = np.argmax(cosine_sim)
+
+    # Get the best matching document
+    best_doc = all_docs[best_match_idx]
+    best_url = all_metadata[best_match_idx]['url']
+    best_score = cosine_sim[0][best_match_idx]
+
+    # Highlight the query in the best document
+    highlighted_text = highlight_text(best_doc, query)
+
+    # Return the top result
+    return [(best_score, best_doc, best_url)], highlighted_text
+
+def highlight_text(text, query):
+    """Highlights the query text in the document."""
+    return text.replace(query, f"<mark>{query}</mark>")
+
+def summarize_text(text, query):
+    """Generates a summary of the text based on the query using OpenAI's GPT-3.5-turbo model."""
     try:
-        # OpenAI Chat API (for GPT-3.5 or GPT-4)
+        prompt = f"Summarize the following text based on the query '{query}':\n\n{text}"
+
+        # Using OpenAI's ChatCompletion endpoint for summarization
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # You can also use "gpt-4" if you prefer
+            model="gpt-3.5-turbo",  # Ensure this is the correct model
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=200,
-            temperature=0.7
+            max_tokens=150,
+            temperature=0.7,
         )
 
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
-        return f"Error generating response: {str(e)}"
+        print(f"Error during summarization: {e}")
+        return "Error generating summary."
 
-
-# Streamlit app layout
-def main():
+def run_streamlit_app():
+    """Runs the Streamlit app for querying the assistant."""
     st.title("School Knowledge Assistant")
-    st.markdown("### Ask anything related to the school and get an answer.")
+    query = st.text_input("Enter your query:")
 
-    # Fetch and process content for scraping
-    school_url = config.TOPICS['Home']  # We can default to the home page or a relevant page
-    scraped_content = fetch_and_process_content(school_url)
+    if query:
+        search_results, highlighted_text = perform_search(query)
 
-    # Display prompt input at the bottom, like ChatGPT's input box
-    st.markdown("<hr>", unsafe_allow_html=True)  # A divider line
-    user_input = st.text_input("Type your question here...", "")
+        if search_results:
+            # Display top result
+            st.subheader("Best Match:")
+            st.markdown(highlighted_text, unsafe_allow_html=True)
 
-    # Display response area
-    if user_input:
-        st.markdown("### AI's Answer:")
+            # Summarize the best match document
+            summary = summarize_text(search_results[0][1], query)
+            st.subheader("Summary:")
+            st.write(summary)
 
-        # Generate AI response based on the user's input and scraped data
-        response = generate_response(user_input, scraped_content)
-        st.write(response)
-
-    # Additional Options or Topics for the User
-    st.markdown("### Other Topics:")
-    for topic in config.TOPICS:
-        st.write(f"- {topic}")
-
+        else:
+            st.write("No results found.")
 
 if __name__ == "__main__":
-    main()
+    run_streamlit_app()

@@ -75,7 +75,7 @@ pip install openai # For the Ai part
        (Replace `sk-proj-your_api-key_here` with you actual OpenAi API key.)
 
    #### Step 4.1: Verify the setting of environment variables:
-  In the same CMD or terminal session run the following commnad:
+  In the same CMD or terminal session run the following command:
    - Windows (CMD):
       ```bash
      echo %OPENAI_API_KEY%
@@ -85,13 +85,13 @@ pip install openai # For the Ai part
     echo $OPENAI_API_KEY
     ```
 
-   ### Step 5: Run the Applicatio
+   ### Step 5: Run the Application
      Run the following command in the same CMD or Terminal session:
    ```bash
     streamlit run school_scraper.py
     ```
 
-     It should automatically open a browser instance or a new tab in already open browser. But if does not go to [http://localhost:8501](http://localhost:8501).
+     It should automatically open a browser instance or a new tab in already open browser. But if it does not go to [http://localhost:8501](http://localhost:8501).
 
 ## Usage
 1. Once the app is running, you'll see an input field at the bottom of the page.
