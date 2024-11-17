@@ -62,13 +62,14 @@ Now you're ready to use the app in your browser! 🖥️
 - BeautifulSoup: For scraping content from web pages 🌍
 - Fuzzywuzzy: For fuzzy string matching to find the closest match 🔍
 - Requests: To fetch the content from URLs 🌐
-
+- OpenAI: To process and display the results in a summarized fasshion
 <hr>
 
 ## 🔧 Features
 - Fuzzy Search: Get the most relevant results from the school’s website even if the query is not an exact match! 💡
 - Interactive Dropdown: Choose from multiple answers for better flexibility and ease of use. 🛠️
 - Highlights: View the highlighted part of the page where the query was found. ✨
+- Ai: Summarizes the text of the page to display to the point answers
 
 <hr>
 
