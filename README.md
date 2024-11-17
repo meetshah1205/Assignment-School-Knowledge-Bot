@@ -87,9 +87,9 @@ pip install openai # For the Ai part
 
    ### Step 5: Run the Applicatio
      Run the following command in the same CMD or Terminal session:
-      ```bash
-           streamlit run school_scraper.py
-        ```
+   ```bash
+    streamlit run school_scraper.py
+    ```
 
      It should automatically open a browser instance or a new tab in already open browser. But if does not go to [http://localhost:8501](http://localhost:8501).
 
