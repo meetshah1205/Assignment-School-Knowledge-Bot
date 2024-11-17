@@ -56,9 +56,34 @@ pip install openai # For the Ai part
 ```
 
 ### Step 4: Set up API Keys
-  Put your API key in [config.py](https://github.com/meetshah1205/Assignment-School-Knowledge-Bot/blob/main/config.py).
+- In Windows:
+  - Open Command Prompt (CMD or cmd.exe).
+  - `cd` into the project folder (if not already).
+  - Run the following command
+    ```bash
+    set OPENAI_API_KEY=sk-proj-your-api-key-here
+    ```
+    (Replace `sk-proj-your_api-key_here` with you actual OpenAi API key.)
+    
+- In MacOS/Linux:
+     - Open terminal.
+     - `cd` into the project folder (If not already).
+     - Run the following command
+       ```bash
+       export OPENAI_API_KEY='sk-proj-your-api-key-here'
+       ```
+       (Replace `sk-proj-your_api-key_here` with you actual OpenAi API key.)
 
-
+   #### Step 4.1: Verify the setting of environment variables:
+  In the same CMD or terminal session run the following command:
+   - Windows (CMD):
+      ```bash
+     echo %OPENAI_API_KEY%
+     ```
+  - MacOS/Linux (Terminal):
+    ```bash
+    echo $OPENAI_API_KEY
+    ```
 
    ### Step 5: Run the Application
      Run the following command in the same CMD or Terminal session:

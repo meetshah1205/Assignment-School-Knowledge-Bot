@@ -29,6 +29,3 @@ TOPICS = {
     'Admission Procedure': 'https://www.shreevidyanagarschool.org/admission-procedure.html',
     'Achievements': 'https://www.shreevidyanagarschool.org/achievements.html'
 }
-
-OPENAI_API_KEY = '' 
-# replace with your actual api key

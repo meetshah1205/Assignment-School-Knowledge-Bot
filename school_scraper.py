@@ -1,14 +1,20 @@
+import os
 import openai
 import chromadb
 import requests
 from bs4 import BeautifulSoup
 from sklearn.metrics.pairwise import cosine_similarity
-from config import OPENAI_API_KEY, URLS_TO_SCRAPE  # Import API key and URLs from config.py
 import numpy as np
 import streamlit as st
+from config import URLS_TO_SCRAPE
+
+# Get the OpenAI API key from the environment variable
+openai_api_key = os.getenv("OPENAI_API_KEY")
+if not openai_api_key:
+    raise ValueError("API key not found. Please set the OPENAI_API_KEY environment variable.")
 
 # Set OpenAI API key
-openai.api_key = OPENAI_API_KEY
+openai.api_key = openai_api_key
 
 # Initialize Chroma DB client
 client = chromadb.Client()
