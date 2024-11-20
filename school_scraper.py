@@ -9,7 +9,7 @@ import streamlit as st
 from config import URLS_TO_SCRAPE
 
 # Get the OpenAI API key from the environment variable
-openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")    
 if not openai_api_key:
     raise ValueError("API key not found. Please set the OPENAI_API_KEY environment variable.")
 
@@ -92,11 +92,8 @@ def perform_search(query):
     best_url = all_metadata[best_match_idx]['url']
     best_score = cosine_sim[0][best_match_idx]
 
-    # Highlight the query in the best document
-    highlighted_text = highlight_text(best_doc, query)
-
-    # Return the top result
-    return [(best_score, best_doc, best_url)], highlighted_text
+    # Return the top result and highlighted text
+    return [(best_score, best_doc, best_url)], highlight_text(best_doc, query)
 
 def highlight_text(text, query):
     """Highlights the query text in the document."""
@@ -109,7 +106,7 @@ def summarize_text(text, query):
 
         # Using OpenAI's ChatCompletion endpoint for summarization
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Ensure this is the correct model
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
