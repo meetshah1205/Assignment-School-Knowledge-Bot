@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # School Knowledge Assistant
 
 The **School Knowledge Assistant** is an interactive web application that helps users get quick, AI-generated answers based on the content scraped from the official school website. Powered by OpenAI's language models, this assistant responds to user queries in real-time, providing accurate information sourced directly from the school's web pages.
